@@ -17,16 +17,27 @@ import com.google.common.collect.ImmutableSet;
 import io.trino.plugin.hive.authentication.ImpersonatingHdfsAuthentication;
 import io.trino.plugin.hive.authentication.SimpleHadoopAuthentication;
 import io.trino.plugin.hive.authentication.SimpleUserNameProvider;
+import io.trino.plugin.hive.fs.TrinoFileSystemCache;
 import io.trino.spi.security.ConnectorIdentity;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SplittableRandom;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static io.trino.hadoop.ConfigurationInstantiator.newEmptyConfiguration;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.fail;
 
 public class TestFileSystemCache
 {
@@ -56,9 +67,74 @@ public class TestFileSystemCache
         assertNotSame(fs5, fs1);
     }
 
-    private FileSystem getFileSystem(HdfsEnvironment environment, ConnectorIdentity identity)
+    @Test(expectedExceptions = IOException.class,
+            expectedExceptionsMessageRegExp = "FileSystem max cache size has been reached: 1000")
+    public void testFileSystemCacheException() throws IOException
+    {
+        HdfsEnvironment environment = new HdfsEnvironment(
+                new HiveHdfsConfiguration(new HdfsConfigurationInitializer(new HdfsConfig()), ImmutableSet.of()),
+                new HdfsConfig(),
+                new ImpersonatingHdfsAuthentication(new SimpleHadoopAuthentication(), new SimpleUserNameProvider()));
+
+        int numUsers = 1001;
+        for (int i = 0; i < numUsers; ++i) {
+            getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(i)));
+        }
+
+        fail("Should have thrown IOException from above");
+    }
+
+    @Test
+    public void testFileSystemCacheConcurrency() throws InterruptedException, ExecutionException
+    {
+        int numThreads = 20;
+        List<Callable<Void>> callableTasks = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+            callableTasks.add(new CreateAndCloseFileSystems(new SplittableRandom(i), 10, 1000));
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        List<Future<Void>> futures = executor.invokeAll(callableTasks);
+        for (Future<Void> fut : futures) {
+            fut.get();
+        }
+        assertEquals(0, TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize());
+    }
+
+    private static FileSystem getFileSystem(HdfsEnvironment environment, ConnectorIdentity identity)
             throws IOException
     {
         return environment.getFileSystem(identity, new Path("/"), newEmptyConfiguration());
+    }
+
+    // A callable that creates and closes filesystem objects X times for Y users
+    public static class CreateAndCloseFileSystems
+            implements Callable<Void>
+    {
+        private final SplittableRandom random;
+        private final int numUsers;
+        private final int numGetCallsPerInvocation;
+
+        private HdfsEnvironment environment = new HdfsEnvironment(
+                new HiveHdfsConfiguration(new HdfsConfigurationInitializer(new HdfsConfig()), ImmutableSet.of()),
+                new HdfsConfig(),
+                new ImpersonatingHdfsAuthentication(new SimpleHadoopAuthentication(), new SimpleUserNameProvider()));
+
+        CreateAndCloseFileSystems(SplittableRandom random, int numUsers, int numGetCallsPerInvocation)
+        {
+            this.random = random;
+            this.numUsers = numUsers;
+            this.numGetCallsPerInvocation = numGetCallsPerInvocation;
+        }
+
+        @Override
+        public Void call() throws IOException
+        {
+            for (int i = 0; i < numGetCallsPerInvocation; ++i) {
+                FileSystem fs = getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(random.nextInt(numUsers))));
+                fs.close(); // triggers fscache.remove()
+            }
+            return null;
+        }
     }
 }
