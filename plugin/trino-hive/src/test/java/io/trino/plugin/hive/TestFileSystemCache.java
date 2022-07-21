@@ -96,8 +96,8 @@ public class TestFileSystemCache
             callableTasks.add(
                     new CreateAndConsumeFileSystems(
                             new SplittableRandom(i),
-                            2,
-                            3,
+                            10,
+                            1000,
                             fs -> fs.close() /* triggers fscache.remove() */));
         }
         TrinoFileSystemCache.INSTANCE.closeAll();
