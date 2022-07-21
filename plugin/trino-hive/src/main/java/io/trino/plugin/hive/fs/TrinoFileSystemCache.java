@@ -303,8 +303,7 @@ public class TrinoFileSystemCache
         private final Configuration conf;
         private final Set<?> privateCredentials;
         private final String cacheCredentials;
-
-        private volatile FileSystem fileSystem;
+        private FileSystem fileSystem;
 
         public FileSystemHolder(URI uri, Configuration conf, Set<?> privateCredentials)
         {
@@ -314,15 +313,11 @@ public class TrinoFileSystemCache
             this.cacheCredentials = conf.get(CACHE_KEY, "");
         }
 
-        public void createFileSystemOnce()
+        public synchronized void createFileSystemOnce()
                 throws IOException
         {
             if (fileSystem == null) {
-                synchronized (FileSystemHolder.this) {
-                    if (fileSystem == null) {
-                        fileSystem = TrinoFileSystemCache.createFileSystem(uri, conf);
-                    }
-                }
+                fileSystem = TrinoFileSystemCache.createFileSystem(uri, conf);
             }
         }
 
@@ -340,7 +335,7 @@ public class TrinoFileSystemCache
                     || !this.cacheCredentials.equals(newConf.get(CACHE_KEY, ""));
         }
 
-        public FileSystem getFileSystem()
+        public synchronized FileSystem getFileSystem()
         {
             return fileSystem;
         }
