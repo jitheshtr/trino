@@ -68,7 +68,7 @@ public class TrinoFileSystemCache
     private final TrinoFileSystemCacheStats stats;
 
     private final Map<FileSystemKey, FileSystemHolder> cache = new ConcurrentHashMap<>();
-    private final AtomicLong cacheSize = new AtomicLong();
+    //private final AtomicLong cacheSize = new AtomicLong();
 
     @VisibleForTesting
     TrinoFileSystemCache()
@@ -110,7 +110,8 @@ public class TrinoFileSystemCache
         try {
             fileSystemHolder = cache.compute(key, (k, currFileSystemHolder) -> {
                 if (currFileSystemHolder == null) {
-                    if (cacheSize.getAndUpdate(curr -> curr < maxSize ? (curr + 1) : curr) >= maxSize) {
+                    //if (cacheSize.getAndUpdate(curr -> curr < maxSize ? (curr + 1) : curr) >= maxSize) {
+                    if (cache.size() >= maxSize) {
                         throw new RuntimeException(
                                 new IOException(format("FileSystem max cache size has been reached: %s", maxSize)));
                     }
@@ -166,12 +167,13 @@ public class TrinoFileSystemCache
         stats.newRemoveCall();
         cache.forEach((key, holder) -> {
             if (fileSystem.equals(holder.getFileSystem())) {
-                cache.compute(key, (k, currFileSystemHolder) -> {
+                cache.remove(key);
+                /*cache.compute(key, (k, currFileSystemHolder) -> {
                     if (currFileSystemHolder != null) {
                         cacheSize.decrementAndGet();
                     }
                     return null;
-                });
+                });*/
             }
         });
     }
@@ -187,12 +189,13 @@ public class TrinoFileSystemCache
                 // cacheSize for the same key more than once, fs.close() below
                 // should be invoked after removing the key from cache.
                 try {
-                    cache.compute(key, (k, currFileSystemHolder) -> {
+                    cache.remove(key);
+                    /*cache.compute(key, (k, currFileSystemHolder) -> {
                         if (currFileSystemHolder != null) {
                             cacheSize.decrementAndGet();
                         }
                         return null;
-                    });
+                    });*/
                     if (holder.getFileSystem() != null) {
                         holder.getFileSystem().close();
                     }
