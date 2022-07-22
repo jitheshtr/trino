@@ -166,8 +166,8 @@ public class TrinoFileSystemCache
         stats.newRemoveCall();
         cache.forEach((key, holder) -> {
             if (fileSystem.equals(holder.getFileSystem())) {
-                cache.remove(key);
                 cacheSize.decrementAndGet();
+                cache.remove(key);
             }
         });
     }
@@ -183,8 +183,8 @@ public class TrinoFileSystemCache
                 // cacheSize for the same key more than once, fs.close() below
                 // should be invoked after removing the key from cache.
                 try {
-                    cache.remove(key);
                     cacheSize.decrementAndGet();
+                    cache.remove(key);
                     if (holder.getFileSystem() != null) {
                         holder.getFileSystem().close();
                     }
