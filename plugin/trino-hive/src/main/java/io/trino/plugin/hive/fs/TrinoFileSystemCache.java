@@ -187,15 +187,15 @@ public class TrinoFileSystemCache
                 // cacheSize for the same key more than once, fs.close() below
                 // should be invoked after removing the key from cache.
                 try {
-                    if (holder.getFileSystem() != null) {
-                        holder.getFileSystem().close();
-                    }
                     cache.compute(key, (k, currFileSystemHolder) -> {
                         if (currFileSystemHolder != null) {
                             cacheSize.decrementAndGet();
                         }
                         return null;
                     });
+                    if (holder.getFileSystem() != null) {
+                        holder.getFileSystem().close();
+                    }
                 }
                 catch (IOException e) {
                     throw new RuntimeException(e);
