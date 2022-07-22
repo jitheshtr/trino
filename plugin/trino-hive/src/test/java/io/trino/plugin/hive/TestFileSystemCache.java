@@ -82,6 +82,7 @@ public class TestFileSystemCache
             getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(i)));
         }
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 1000);
+        assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 1000);
 
         getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(1001)));
         fail("Should have thrown IOException from above");
@@ -108,6 +109,7 @@ public class TestFileSystemCache
             fut.get();
         }
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0, "Cache size is non zero");
+        assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 0, "cacheSize is non zero");
     }
 
     private static FileSystem getFileSystem(HdfsEnvironment environment, ConnectorIdentity identity)

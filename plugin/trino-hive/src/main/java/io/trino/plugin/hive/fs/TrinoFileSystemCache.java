@@ -93,7 +93,7 @@ public class TrinoFileSystemCache
     }
 
     @VisibleForTesting
-    int getCacheSize()
+    public int getCacheSize()
     {
         return cache.size();
     }
