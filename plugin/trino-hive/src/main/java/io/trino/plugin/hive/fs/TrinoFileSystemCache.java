@@ -113,7 +113,7 @@ public class TrinoFileSystemCache
 
         FileSystemHolder fileSystemHolder = map.get(key);
         if (fileSystemHolder == null) {
-            int maxSize = conf.getInt("fs.cache.max-size", 1000);
+            int maxSize = conf.getInt("fs.cache.max-size", 1000);//test
             if (map.size() >= maxSize) {
                 stats.newGetCallFailed();
                 throw new IOException(format("FileSystem max cache size has been reached: %s", maxSize));
