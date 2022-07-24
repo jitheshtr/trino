@@ -99,7 +99,7 @@ public class TrinoFileSystemCache
     }
 
     @VisibleForTesting
-    int getCacheSize()
+    public int getCacheSize()
     {
         return map.size();
     }
