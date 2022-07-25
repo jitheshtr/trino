@@ -67,7 +67,7 @@ public class TestFileSystemCache
         assertNotSame(fs5, fs1);
     }
 
-    @Test(expectedExceptions = IOException.class,
+    @Test(enabled = false, expectedExceptions = IOException.class,
             expectedExceptionsMessageRegExp = "FileSystem max cache size has been reached: 1000")
     public void testFileSystemCacheException() throws IOException
     {
@@ -88,7 +88,7 @@ public class TestFileSystemCache
         fail("Should have thrown IOException from above");
     }
 
-    @Test
+    @Test(enabled = false)
     public void testFileSystemCacheConcurrency() throws InterruptedException, ExecutionException, IOException
     {
         int numThreads = 20;
