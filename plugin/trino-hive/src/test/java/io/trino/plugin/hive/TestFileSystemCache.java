@@ -21,6 +21,7 @@ import io.trino.plugin.hive.fs.TrinoFileSystemCache;
 import io.trino.spi.security.ConnectorIdentity;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -39,8 +40,16 @@ import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
+@Test(singleThreaded = true)
 public class TestFileSystemCache
 {
+    @AfterClass(alwaysRun = true)
+    public void teardown()
+            throws IOException
+    {
+        TrinoFileSystemCache.INSTANCE.closeAll();
+    }
+
     @Test
     public void testFileSystemCache()
             throws IOException
@@ -67,7 +76,7 @@ public class TestFileSystemCache
         assertNotSame(fs5, fs1);
     }
 
-    @Test(enabled = false, expectedExceptions = IOException.class,
+    @Test(enabled = true, expectedExceptions = IOException.class,
             expectedExceptionsMessageRegExp = "FileSystem max cache size has been reached: 1000")
     public void testFileSystemCacheException() throws IOException
     {
