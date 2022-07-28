@@ -88,7 +88,7 @@ public class TestFileSystemCache
         fail("Should have thrown IOException from above");
     }
 
-    @Test(enabled = false)
+    @Test(enabled = true)
     public void testFileSystemCacheConcurrency() throws InterruptedException, ExecutionException, IOException
     {
         int numThreads = 20;
