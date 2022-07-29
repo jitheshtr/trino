@@ -14,6 +14,8 @@
 package io.trino.plugin.hive;
 
 import io.trino.jmh.Benchmarks;
+import io.trino.plugin.hive.fs.TrinoFileSystemCache;
+import java.io.IOException;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -79,8 +81,8 @@ public class BenchmarkGetFileSystem
         }
 
         @TearDown(Level.Invocation)
-        public void tearDown()
-        {
+        public void tearDown() throws IOException {
+            TrinoFileSystemCache.INSTANCE.closeAll();
             executor.shutdown();
         }
     }

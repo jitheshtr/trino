@@ -47,6 +47,9 @@ public class TestFileSystemCache
     public void teardown()
             throws IOException
     {
+        // From https://maven.apache.org/surefire/maven-surefire-plugin/examples/fork-options-and-parallel-execution.html
+        // The default setting is forkCount=1/reuseForks=true, which means that maven-surefire-plugin creates one new
+        // JVM process to execute all tests in one Maven module.
         TrinoFileSystemCache.INSTANCE.closeAll();
     }
 
@@ -76,7 +79,7 @@ public class TestFileSystemCache
         assertNotSame(fs5, fs1);
     }
 
-    @Test(enabled = true, expectedExceptions = IOException.class,
+    @Test(expectedExceptions = IOException.class,
             expectedExceptionsMessageRegExp = "FileSystem max cache size has been reached: 1000")
     public void testFileSystemCacheException() throws IOException
     {
@@ -97,7 +100,7 @@ public class TestFileSystemCache
         fail("Should have thrown IOException from above");
     }
 
-    @Test(enabled = true)
+    @Test
     public void testFileSystemCacheConcurrency() throws InterruptedException, ExecutionException, IOException
     {
         int numThreads = 20;
