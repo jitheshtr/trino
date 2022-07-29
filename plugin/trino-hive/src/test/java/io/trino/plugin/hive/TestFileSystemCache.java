@@ -21,7 +21,7 @@ import io.trino.plugin.hive.fs.TrinoFileSystemCache;
 import io.trino.spi.security.ConnectorIdentity;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -43,7 +43,7 @@ import static org.testng.Assert.fail;
 @Test(singleThreaded = true)
 public class TestFileSystemCache
 {
-    @AfterClass(alwaysRun = true)
+    @AfterMethod(alwaysRun = true)
     public void teardown()
             throws IOException
     {
@@ -79,15 +79,13 @@ public class TestFileSystemCache
         assertNotSame(fs5, fs1);
     }
 
-    @Test(expectedExceptions = IOException.class,
-            expectedExceptionsMessageRegExp = "FileSystem max cache size has been reached: 1000")
+    @Test
     public void testFileSystemCacheException() throws IOException
     {
         HdfsEnvironment environment = new HdfsEnvironment(
                 new HiveHdfsConfiguration(new HdfsConfigurationInitializer(new HdfsConfig()), ImmutableSet.of()),
                 new HdfsConfig(),
                 new ImpersonatingHdfsAuthentication(new SimpleHadoopAuthentication(), new SimpleUserNameProvider()));
-        TrinoFileSystemCache.INSTANCE.closeAll();
 
         int numUsers = 1000;
         for (int i = 0; i < numUsers; ++i) {
@@ -96,8 +94,13 @@ public class TestFileSystemCache
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 1000);
         assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 1000);
 
-        getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(1001)));
-        fail("Should have thrown IOException from above");
+        try {
+            getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(1001)));
+            fail("Should have thrown IOException from above");
+        }
+        catch (IOException e) {
+            assertEquals(e.getMessage(), "FileSystem max cache size has been reached: 1000");
+        }
     }
 
     @Test
@@ -113,7 +116,6 @@ public class TestFileSystemCache
                             1000,
                             fs -> fs.close() /* triggers fscache.remove() */));
         }
-        TrinoFileSystemCache.INSTANCE.closeAll();
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         List<Future<Void>> futures = executor.invokeAll(callableTasks);
