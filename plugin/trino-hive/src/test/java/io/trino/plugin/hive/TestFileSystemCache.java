@@ -139,7 +139,7 @@ public class TestFileSystemCache
     }
 
     // A callable that creates (and consumes) filesystem objects X times for Y users
-    public static class CreateAndConsumeFileSystems  // CreateFileSystemAndConsume
+    public static class CreateAndConsumeFileSystems  // JITS CreateFileSystemAndConsume
             implements Callable<Void>
     {
         private final SplittableRandom random;

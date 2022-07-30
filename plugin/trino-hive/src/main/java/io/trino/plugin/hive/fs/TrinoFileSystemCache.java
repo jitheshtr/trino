@@ -166,6 +166,7 @@ public class TrinoFileSystemCache
         stats.newRemoveCall();
         cache.forEach((key, holder) -> {
             if (fileSystem.equals(holder.getFileSystem())) {
+                // decrement cacheSize only if the key is still mapped
                 cache.compute(key, (k, currFileSystemHolder) -> {
                     if (currFileSystemHolder != null) {
                         cacheSize.decrementAndGet();
@@ -182,10 +183,6 @@ public class TrinoFileSystemCache
     {
         try {
             cache.forEach((key, holder) -> {
-                // There is interaction between closeAll() and remove() as fs.close()
-                // call below triggers CACHE.remove(fs). To avoid decrementing
-                // cacheSize for the same key more than once, fs.close() below
-                // should be invoked after removing the key from cache.
                 try {
                     cache.compute(key, (k, currFileSystemHolder) -> {
                         if (currFileSystemHolder != null) {
