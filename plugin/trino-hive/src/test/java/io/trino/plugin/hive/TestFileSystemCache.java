@@ -44,13 +44,13 @@ import static org.testng.Assert.fail;
 public class TestFileSystemCache
 {
     @AfterMethod(alwaysRun = true)
-    public void teardown()
+    public void cleanup()
             throws IOException
     {
         // From https://maven.apache.org/surefire/maven-surefire-plugin/examples/fork-options-and-parallel-execution.html
         // The default setting is forkCount=1/reuseForks=true, which means that maven-surefire-plugin creates one new
         // JVM process to execute all tests in one Maven module.
-        TrinoFileSystemCache.INSTANCE.closeAll();
+        FileSystem.closeAll();
     }
 
     @Test
@@ -77,6 +77,7 @@ public class TestFileSystemCache
 
         FileSystem fs5 = getFileSystem(environment, userId);
         assertNotSame(fs5, fs1);
+        FileSystem.closeAll();
     }
 
     @Test
