@@ -122,6 +122,7 @@ public class TestFileSystemCache
         for (Future<Void> fut : futures) {
             fut.get();
         }
+        executor.shutdown();
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0, "Cache size is non zero");
         assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 0, "cacheSize is non zero");
     }
