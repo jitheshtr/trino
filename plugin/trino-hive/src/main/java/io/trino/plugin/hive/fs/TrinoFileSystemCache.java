@@ -14,6 +14,7 @@
 package io.trino.plugin.hive.fs;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.log.Logger;
 import org.apache.hadoop.conf.Configuration;
@@ -203,6 +204,16 @@ public class TrinoFileSystemCache
             throwIfInstanceOf(e.getCause(), IOException.class);
             throw e;
         }
+    }
+
+    public String toString()
+    {
+        MoreObjects.ToStringHelper helper = toStringHelper(this);
+        cache.forEach((key, holder) -> {
+            helper.add("key", key);
+            helper.add("value", holder);
+        });
+        return helper.toString();
     }
 
     private static FileSystemKey createFileSystemKey(URI uri, UserGroupInformation userGroupInformation, long unique)

@@ -94,6 +94,7 @@ public class TestFileSystemCache
             assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), i);
             getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(i)));
         }
+        System.err.println(TrinoFileSystemCache.INSTANCE);
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 1000);
         assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 1000);
 
@@ -128,6 +129,7 @@ public class TestFileSystemCache
             fut.get();
         }
         executor.shutdown();
+        System.err.println(TrinoFileSystemCache.INSTANCE);
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0, "Cache size is non zero");
         assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 0, "cacheSize is non zero");
     }
