@@ -91,6 +91,7 @@ public class TestFileSystemCache
 
         int numUsers = 1000;
         for (int i = 0; i < numUsers; ++i) {
+            assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), i);
             getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(i)));
         }
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 1000);
@@ -121,6 +122,7 @@ public class TestFileSystemCache
 
         FileSystem.closeAll();
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0);
         List<Future<Void>> futures = executor.invokeAll(callableTasks);
         for (Future<Void> fut : futures) {
             fut.get();
