@@ -21,8 +21,7 @@ import io.trino.plugin.hive.fs.TrinoFileSystemCache;
 import io.trino.spi.security.ConnectorIdentity;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -44,8 +43,7 @@ import static org.testng.Assert.fail;
 @Test(singleThreaded = true)
 public class TestFileSystemCache
 {
-    @BeforeMethod(alwaysRun = true)
-    @AfterMethod(alwaysRun = true)
+    @AfterClass(alwaysRun = true)
     public void cleanup()
             throws IOException
     {
@@ -59,6 +57,7 @@ public class TestFileSystemCache
     public void testFileSystemCache()
             throws IOException
     {
+        FileSystem.closeAll();
         HdfsEnvironment environment = new HdfsEnvironment(
                 new HiveHdfsConfiguration(new HdfsConfigurationInitializer(new HdfsConfig()), ImmutableSet.of()),
                 new HdfsConfig(),
@@ -84,6 +83,7 @@ public class TestFileSystemCache
     @Test
     public void testFileSystemCacheException() throws IOException
     {
+        FileSystem.closeAll();
         HdfsEnvironment environment = new HdfsEnvironment(
                 new HiveHdfsConfiguration(new HdfsConfigurationInitializer(new HdfsConfig()), ImmutableSet.of()),
                 new HdfsConfig(),
@@ -119,6 +119,7 @@ public class TestFileSystemCache
                             fs -> fs.close() /* triggers fscache.remove() */));
         }
 
+        FileSystem.closeAll();
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         List<Future<Void>> futures = executor.invokeAll(callableTasks);
         for (Future<Void> fut : futures) {
