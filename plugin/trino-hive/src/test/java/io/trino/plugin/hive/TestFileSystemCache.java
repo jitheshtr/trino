@@ -84,6 +84,7 @@ public class TestFileSystemCache
     public void testFileSystemCacheException() throws IOException
     {
         FileSystem.closeAll();
+        TrinoFileSystemCache.checkUser.set(1);
         HdfsEnvironment environment = new HdfsEnvironment(
                 new HiveHdfsConfiguration(new HdfsConfigurationInitializer(new HdfsConfig()), ImmutableSet.of()),
                 new HdfsConfig(),
@@ -95,6 +96,8 @@ public class TestFileSystemCache
             getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(i)));
         }
         System.err.println(TrinoFileSystemCache.INSTANCE);
+        TrinoFileSystemCache.checkUser.set(0);
+
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 1000);
         assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 1000);
 
@@ -122,6 +125,7 @@ public class TestFileSystemCache
         }
 
         FileSystem.closeAll();
+        TrinoFileSystemCache.checkUser.set(1);
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0);
         List<Future<Void>> futures = executor.invokeAll(callableTasks);
@@ -130,6 +134,7 @@ public class TestFileSystemCache
         }
         executor.shutdown();
         System.err.println(TrinoFileSystemCache.INSTANCE);
+        TrinoFileSystemCache.checkUser.set(0);
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0, "Cache size is non zero");
         assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 0, "cacheSize is non zero");
     }

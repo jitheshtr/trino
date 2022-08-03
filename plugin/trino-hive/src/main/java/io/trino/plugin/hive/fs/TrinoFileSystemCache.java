@@ -71,6 +71,8 @@ public class TrinoFileSystemCache
     private final Map<FileSystemKey, FileSystemHolder> cache = new ConcurrentHashMap<>();
     private final AtomicLong cacheSize = new AtomicLong();
 
+    public static final AtomicLong checkUser = new AtomicLong();
+
     @VisibleForTesting
     TrinoFileSystemCache()
     {
@@ -236,7 +238,7 @@ public class TrinoFileSystemCache
             default:
                 throw new IllegalArgumentException("Unsupported authentication method: " + authenticationMethod);
         }
-        if (realUser.equals("runner") && proxyUser == null) {
+        if (checkUser.get() !=0 && realUser.equals("runner") && proxyUser == null) {
             throw new RuntimeException("Saw user runner with null proxy user");
         }
         return new FileSystemKey(scheme, authority, unique, realUser, proxyUser);
