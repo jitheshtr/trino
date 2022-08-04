@@ -125,8 +125,10 @@ public class TestFileSystemCache
         }
 
         FileSystem.closeAll();
+
         TrinoFileSystemCache.checkUser.set(1);
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
         assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 0);
         List<Future<Void>> futures = executor.invokeAll(callableTasks);
         for (Future<Void> fut : futures) {
