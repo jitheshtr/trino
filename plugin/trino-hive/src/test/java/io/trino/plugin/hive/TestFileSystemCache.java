@@ -90,19 +90,19 @@ public class TestFileSystemCache
                 new HdfsConfig(),
                 new ImpersonatingHdfsAuthentication(new SimpleHadoopAuthentication(), new SimpleUserNameProvider()));
 
-        int numUsers = 1000;
-        for (int i = 0; i < numUsers; ++i) {
+        int maxCacheSize = 1000;
+        for (int i = 0; i < maxCacheSize; ++i) {
             assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), i);
             getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(i)));
         }
         System.err.println(TrinoFileSystemCache.INSTANCE);
         TrinoFileSystemCache.checkUser.set(0);
 
-        assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), 1000);
-        assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), 1000);
+        assertEquals(TrinoFileSystemCache.INSTANCE.getFileSystemCacheStats().getCacheSize(), maxCacheSize);
+        assertEquals(TrinoFileSystemCache.INSTANCE.getCacheSize(), maxCacheSize);
 
         try {
-            getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(1000)));
+            getFileSystem(environment, ConnectorIdentity.ofUser("user" + String.valueOf(maxCacheSize)));
             fail("Should have thrown IOException from above");
         }
         catch (IOException e) {

@@ -14,7 +14,6 @@
 package io.trino.plugin.hive.fs;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.log.Logger;
 import org.apache.hadoop.conf.Configuration;
@@ -46,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.google.common.base.MoreObjects.ToStringHelper;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
@@ -208,9 +208,10 @@ public class TrinoFileSystemCache
         }
     }
 
+    @Override
     public String toString()
     {
-        MoreObjects.ToStringHelper helper = toStringHelper(this);
+        ToStringHelper helper = toStringHelper(this);
         cache.forEach((key, holder) -> {
             helper.add("key", key);
             helper.add("value", holder);
@@ -238,7 +239,7 @@ public class TrinoFileSystemCache
             default:
                 throw new IllegalArgumentException("Unsupported authentication method: " + authenticationMethod);
         }
-        if (checkUser.get() !=0 && realUser.equals("runner") && proxyUser == null) {
+        if (checkUser.get() != 0 && realUser.equals("runner") && proxyUser == null) {
             throw new RuntimeException("Saw user runner with null proxy user");
         }
         return new FileSystemKey(scheme, authority, unique, realUser, proxyUser);
