@@ -109,9 +109,10 @@ public class TrinoFileSystemCache
         int maxSize = conf.getInt("fs.cache.max-size", 1000);
         FileSystemHolder fileSystemHolder;
         try {
-            fileSystemHolder = cache.compute(key, (k, currFileSystemHolder) -> {
-                if (currFileSystemHolder == null) {
-                    if (cacheSize.getAndUpdate(curr -> curr < maxSize ? (curr + 1) : curr) >= maxSize) {
+            fileSystemHolder = cache.compute(key, (k, currentFileSystemHolder) -> {
+                if (currentFileSystemHolder == null) {
+                    if (cacheSize.getAndUpdate(currentSize -> currentSize < maxSize ?
+                            (currentSize + 1) : currentSize) >= maxSize) {
                         throw new RuntimeException(
                                 new IOException(format("FileSystem max cache size has been reached: %s", maxSize)));
                     }
@@ -119,15 +120,16 @@ public class TrinoFileSystemCache
                 }
                 else {
                     // Update file system instance when credentials change.
-                    if (currFileSystemHolder.credentialsChanged(uri, conf, privateCredentials)) {
+                    if (currentFileSystemHolder.credentialsChanged(uri, conf, privateCredentials)) {
                         return new FileSystemHolder(uri, conf, privateCredentials);
                     }
                     else {
-                        return currFileSystemHolder;
+                        return currentFileSystemHolder;
                     }
                 }
             });
 
+            // Now create the filesystem object outside of cache's lock
             fileSystemHolder.createFileSystemOnce();
         }
         catch (RuntimeException | IOException e) {
@@ -165,15 +167,18 @@ public class TrinoFileSystemCache
     public void remove(FileSystem fileSystem)
     {
         stats.newRemoveCall();
-        cache.forEach((key, holder) -> {
-            if (fileSystem.equals(holder.getFileSystem())) {
-                // decrement cacheSize only if the key is
-                // still mapped after acquiring the lock
-                cache.compute(key, (k, currFileSystemHolder) -> {
-                    if (currFileSystemHolder != null) {
+        cache.forEach((key, fileSystemHolder) -> {
+            if (fileSystem.equals(fileSystemHolder.getFileSystem())) {
+                // After acquiring the lock, decrement cacheSize only if
+                // (1) the key is still mapped to a FileSystemHolder
+                // (2) the filesystem object inside FileSystemHolder is the same
+                cache.compute(key, (k, currentFileSystemHolder) -> {
+                    if (currentFileSystemHolder != null
+                            && fileSystem.equals(currentFileSystemHolder.getFileSystem())) {
                         cacheSize.decrementAndGet();
+                        return null;
                     }
-                    return null;
+                    return currentFileSystemHolder;
                 });
             }
         });
@@ -184,16 +189,18 @@ public class TrinoFileSystemCache
             throws IOException
     {
         try {
-            cache.forEach((key, holder) -> {
+            cache.forEach((key, fileSystemHolder) -> {
                 try {
-                    cache.compute(key, (k, currFileSystemHolder) -> {
-                        if (currFileSystemHolder != null) {
+                    cache.compute(key, (k, currentFileSystemHolder) -> {
+                        // decrement cacheSize only if the key is still mapped
+                        if (currentFileSystemHolder != null) {
                             cacheSize.decrementAndGet();
                         }
                         return null;
                     });
-                    if (holder.getFileSystem() != null) {
-                        closeFileSystem(holder.getFileSystem());
+                    FileSystem fs = fileSystemHolder.getFileSystem();
+                    if (fs != null) {
+                        closeFileSystem(fs);
                     }
                 }
                 catch (IOException e) {
