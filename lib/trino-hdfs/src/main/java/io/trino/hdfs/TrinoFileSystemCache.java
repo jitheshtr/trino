@@ -69,6 +69,12 @@ public class TrinoFileSystemCache
     private final TrinoFileSystemCacheStats stats;
 
     private final Map<FileSystemKey, FileSystemHolder> cache = new ConcurrentHashMap<>();
+    /*
+     * ConcurrentHashMap has a lock per partitioned key-space bucket, and hence there is no consistent
+     * or 'serialized' view of current number of entries in the map from a thread that would like to
+     * add/delete/update an entry. As we have to limit the max size of the cache to 'fs.cache.max-size',
+     * an auxiliary variable `cacheSize` is used to track the 'serialized' view of entry count in the cache.
+     */
     private final AtomicLong cacheSize = new AtomicLong();
 
     @VisibleForTesting
@@ -116,12 +122,12 @@ public class TrinoFileSystemCache
                         throw new RuntimeException(
                                 new IOException(format("FileSystem max cache size has been reached: %s", maxSize)));
                     }
-                    return new FileSystemHolder(uri, conf, privateCredentials);
+                    return new FileSystemHolder(conf, privateCredentials);
                 }
                 else {
                     // Update file system instance when credentials change.
                     if (currentFileSystemHolder.credentialsChanged(uri, conf, privateCredentials)) {
-                        return new FileSystemHolder(uri, conf, privateCredentials);
+                        return new FileSystemHolder(conf, privateCredentials);
                     }
                     else {
                         return currentFileSystemHolder;
@@ -130,7 +136,7 @@ public class TrinoFileSystemCache
             });
 
             // Now create the filesystem object outside of cache's lock
-            fileSystemHolder.createFileSystemOnce();
+            fileSystemHolder.createFileSystemOnce(uri, conf);
         }
         catch (RuntimeException | IOException e) {
             stats.newGetCallFailed();
@@ -320,21 +326,17 @@ public class TrinoFileSystemCache
 
     private static class FileSystemHolder
     {
-        private final URI uri;
-        private final Configuration conf;
         private final Set<?> privateCredentials;
         private final String cacheCredentials;
         private volatile FileSystem fileSystem;
 
-        public FileSystemHolder(URI uri, Configuration conf, Set<?> privateCredentials)
+        public FileSystemHolder(Configuration conf, Set<?> privateCredentials)
         {
-            this.uri = requireNonNull(uri, "uri is null");
-            this.conf = requireNonNull(conf, "conf is null");
             this.privateCredentials = ImmutableSet.copyOf(requireNonNull(privateCredentials, "privateCredentials is null"));
             this.cacheCredentials = conf.get(CACHE_KEY, "");
         }
 
-        public void createFileSystemOnce()
+        public void createFileSystemOnce(URI uri, Configuration conf)
                 throws IOException
         {
             if (fileSystem == null) {
