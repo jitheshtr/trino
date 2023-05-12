@@ -255,6 +255,7 @@ public class TrinoFileSystemCache
             default -> throw new IllegalArgumentException("Unsupported authentication method: " + authenticationMethod);
         }
         if (checkUser.get() != 0 && realUser.equals("runner") && proxyUser == null) {
+            System.err.println(TrinoFileSystemCache.INSTANCE);
             throw new RuntimeException("Saw user runner with null proxy user");
         }
         return new FileSystemKey(scheme, authority, unique, realUser, proxyUser);
