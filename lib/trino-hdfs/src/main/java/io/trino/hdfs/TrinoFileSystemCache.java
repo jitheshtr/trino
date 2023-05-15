@@ -254,7 +254,7 @@ public class TrinoFileSystemCache
             }
             default -> throw new IllegalArgumentException("Unsupported authentication method: " + authenticationMethod);
         }
-        if (checkUser.get() != 0 && realUser.equals("runner") && proxyUser == null) {
+        if (checkUser.get() != 0 && proxyUser == null) {
             System.err.println("Spotted external cache access while running TestFileSystemCache, FSCache state: " + TrinoFileSystemCache.INSTANCE);
             Thread.dumpStack();
             //throw new RuntimeException("Saw user runner with null proxy user");
